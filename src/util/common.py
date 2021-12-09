@@ -10,6 +10,7 @@ import os.path as osp
 import matplotlib.pyplot as plt # type: ignore
 
 from src.config import *
+from util.typing.basic import *
 
 
 def get_arguments():
@@ -159,17 +160,41 @@ def per_class_iu(hist):
 
 
 
-def show_sample(batch):
+
+def show_figure_nonblocking() -> None:
+    plt.show(block = False)
+    plt.pause(0.001)
+    #end show_figure_nonblocking
+
+
+
+def draw_sample(batch):
     imgs, msks = batch['image'], batch['label']
-    fig, axs = plt.subplots(1, 2, figsize=(10, 3))
+    fig, axs = plt.subplots(1, 3, figsize=(10, 3))
     axs[0].imshow(imgs[0].permute(1, 2, 0))
     axs[1].imshow(msks[0], cmap = 'tab20', vmin = 0, vmax = 21)
-    #axs.set_title("test")
-    #axs.grid(True)
+    #end draw_sample
 
+def show_sample(batch):
+    draw_sample(batch)
     log("Displaying image of {}".format(batch['name']))
     # plt.colorbar()
-    plt.show()
+    show_figure_nonblocking()
+    #end show_sample
+
+def save_figure(name: str) -> None:
+    try:
+        plt.savefig(name)
+        log('saved figure {}.'.format(name))
+    except IOError:
+        error('Trying to save figure {} failed: {}'.format(name, IOError))
+    #end save_figure
+
+
+def plot(xs: List(int), ys: List(int), style = '') -> None:
+    plt.plot(xs, ys)
+    #end plot
+
 
 
 
@@ -191,6 +216,11 @@ def debug(msg: str, description = "") -> None:
     description = '' if description == '' else description + ': '
     debug_msg = '{} {}{}'.format(prefix, description, msg)
     print(debug_msg)
+
+def error(msg: str) -> None:
+    prefix = '[error]'
+    err_msg = prefixed_with(msg, prefix)
+    print(err_msg)
 
 def custom_log(prefix: str) -> FunctionType:
     return lambda msg: prefixed_with(msg, prefix)

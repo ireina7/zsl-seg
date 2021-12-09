@@ -6,7 +6,7 @@ import torch.optim as optim
 import torch.backends.cudnn as cudnn
 import os
 import os.path as osp
-import matplotlib.pyplot as pyplot # type: ignore
+import matplotlib.pyplot as plt # type: ignore
 
 from src.config import *
 from util import *
@@ -17,6 +17,20 @@ from model.vgg_voc import Our_Model
 
 # from typing import List, Set, Dict, Tuple, Optional, Union, Callable, Iterator
 
+
+def load_model(args) -> Tuple(Our_Model, int):
+    if args.restore_from_where == "pretrained":
+        return Our_Model(split), 0
+    else:
+        raise Exception('Restore model function has not been supported!')
+        # restore_from = get_model_path(args.snapshot_dir)
+        # model_restore_from = restore_from["model"]
+        # i_iter = restore_from["step"]
+
+        # model = Our_Model(split)
+        # saved_state_dict = torch.load(model_restore_from)
+        # model.load_state_dict(saved_state_dict)
+    #end load_model
 
 
 
@@ -32,19 +46,7 @@ def main() -> None:
 
     w, h = args.input_size.split(",")
     input_size = (int(w), int(h))
-    if args.restore_from_where == "pretrained":
-        model = Our_Model(split)
-        i_iter = 0
-    else:
-        raise Exception('Restore model function has not been supported!')
-        # restore_from = get_model_path(args.snapshot_dir)
-        # model_restore_from = restore_from["model"]
-        # i_iter = restore_from["step"]
-
-        # model = Our_Model(split)
-        # saved_state_dict = torch.load(model_restore_from)
-        # model.load_state_dict(saved_state_dict)
-
+    model, i_iter = load_model(args)
     model.train()
     model.to(device)
 
@@ -59,16 +61,16 @@ def main() -> None:
     optimizer = optim.SGD(
         model.optim_parameters_1x(args),
         lr=args.learning_rate, momentum=args.momentum, weight_decay=args.weight_decay)
+    
+    optimizer_10x = optim.SGD(
+        model.optim_parameters_10x(args),
+        lr=10 * args.learning_rate, momentum=args.momentum, weight_decay=args.weight_decay)
     '''
     optimizer = optim.Adam(
         model.optim_parameters_1x(args),
         lr=args.learning_rate, weight_decay=args.weight_decay)
     optimizer.zero_grad()
-    '''
-    optimizer_10x = optim.SGD(
-        model.optim_parameters_10x(args),
-        lr=10 * args.learning_rate, momentum=args.momentum, weight_decay=args.weight_decay)
-    '''
+
     optimizer_10x = optim.Adam(
         model.optim_parameters_10x(args),
         lr=10 * args.learning_rate, weight_decay=args.weight_decay)
@@ -83,6 +85,8 @@ def main() -> None:
         f.write(SNAPSHOT_PATH.split("/")[-1] + "\n")
         f.write("lambda : " + str(lambdaa) + "\n")
 
+    average_mIoUs_history = []
+
     blank_line(2)
     log('Training start ...')
     for epoch in range(args.num_epochs):
@@ -91,6 +95,7 @@ def main() -> None:
         train_iter = enumerate(train_loader)
         model.train()
         hist = np.zeros((15, 15))
+        average_mIoUs_per_epoch = 0
         for i in range(data_len):
             blank_line()
             log("> Epoch {}, loop {}".format(epoch, i))
@@ -138,9 +143,12 @@ def main() -> None:
             #hist += m
             hist += m
             mIoUs = per_class_iu(hist)
+            average_mIoUs = sum(mIoUs) / len(mIoUs)
+            average_mIoUs_per_epoch = average_mIoUs
+            
             log("> mIoU: \n{}".format(per_class_iu(m)))
             log("> mIoUs: \n{}".format(mIoUs))
-            log("> Average mIoUs: \n{}".format(sum(mIoUs) / len(mIoUs)))
+            log("> Average mIoUs: \n{}".format(average_mIoUs))
 
             '''
             m = confusion_matrix(np.array([1, 1, 1, 255]), np.array([1, 2, 0, 0]), 3)
@@ -164,34 +172,30 @@ def main() -> None:
                 x = ans
                 y = masks.cpu()[0]
                 x[y == 255] = 255
-                show_sample(batch)
-                #x = ans
-                pyplot.imshow(x, cmap = 'tab20', vmin = 0, vmax = 21)
+                draw_sample(batch)
+                # pyplot.figure()
+                plt.imshow(x, cmap = 'tab20', vmin = 0, vmax = 21)
                 plt.colorbar()
-                pyplot.show()
-                '''
-                pyplot.imshow(masks[0].cpu())
-                pyplot.show()
-                '''
+                # show_figure_nonblocking()
+                save_figure('output/Epoch-{}-{}.pdf'.format(epoch, batch['name'][0]))
+                
             debug('{} {}'.format(max_[0, 200, 200].data, masks[0, 200, 200].data))
             log("loss: {}".format(loss))
             loss.backward()
             optimizer.step()
             optimizer_10x.step()
 
-
-    '''
-    print("ok")
-
-    for i in range(10):
-        sample = next(train_iter)
-        p = sample[1]['label'][0]
-        print(p[p != 255])
-        pyplot.imshow(sample[1]['label'][0])
-        pyplot.show()
-    '''
+        average_mIoUs_history.append(average_mIoUs_per_epoch)
+        if epoch > 0 and epoch % 10 == 0:
+            plot(range(0, len(average_mIoUs_history)), average_mIoUs_history)
+            show_figure_nonblocking()
+            if epoch >= 10:
+                save_figure('output/mIoUs of Epoches {}-{}.pdf'.format(0, epoch))
 
     #end main
+
+
+
 
 
 
