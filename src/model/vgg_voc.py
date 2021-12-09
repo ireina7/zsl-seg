@@ -86,7 +86,7 @@ class SemanticNet(nn.Module):
         if which_embedding == "all":
             self.hidden = 600
         self.strong_W, self.weak_W, self.all_W = self._get_W()
-        self.encoder = Encoder(1024)
+        self.encoder = Encoder(dim = 1024)
         #end __init__
 
     def forward(self, mask: th.Tensor) -> th.Tensor:
@@ -98,9 +98,9 @@ class SemanticNet(nn.Module):
         string = self.which_embedding + "_strong"
         strong = torch.tensor(Ws[string].T, dtype=torch.float).to(config.DEVICE)
         string = self.which_embedding + "_weak"
-        weak = torch.tensor(Ws[string].T, dtype=torch.float).to(config.DEVICE)#.cuda()
+        weak = torch.tensor(Ws[string].T, dtype=torch.float).to(config.DEVICE)
         string = self.which_embedding + "_all"
-        all = torch.tensor(Ws[string].T, dtype=torch.float).to(config.DEVICE)#.cuda()
+        all = torch.tensor(Ws[string].T, dtype=torch.float).to(config.DEVICE)
 
         return strong, weak, all
         #end _get_w

@@ -39,7 +39,9 @@ Real work start!
 @Auther: Ziqiang Y
 '''
 def main() -> None:
-    """ Main zero shot segmentation function """
+    """ 
+    Main zero shot segmentation function 
+    """
     args = get_arguments()
     device = args.device
     print_config(args)
@@ -89,7 +91,7 @@ def main() -> None:
 
     blank_line(2)
     log('Training start ...')
-    for epoch in range(args.num_epochs):
+    for epoch in range(args.num_epochs + 1):
         # blank_line()
         log(">> Epoch: {}".format(epoch))
         train_iter = enumerate(train_loader)
@@ -186,10 +188,10 @@ def main() -> None:
             optimizer_10x.step()
 
         average_mIoUs_history.append(average_mIoUs_per_epoch)
-        if epoch > 0 and epoch % 10 == 0:
+        if epoch > 0 and epoch % SHOW_EPOCH == 0:
             plot(range(0, len(average_mIoUs_history)), average_mIoUs_history)
-            show_figure_nonblocking()
-            if epoch >= 10:
+            # show_figure_nonblocking()
+            if epoch >= SHOW_EPOCH:
                 save_figure('output/mIoUs of Epoches {}-{}.pdf'.format(0, epoch))
 
     #end main

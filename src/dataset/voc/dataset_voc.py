@@ -84,14 +84,15 @@ def dataloader_voc(
     input_size = (512, 512),
     shuffle = True,
     num_workers = 2,
-    split = None
+    split = None,
+    mode = 'train',
     ):
     """
     The main dataloader
     @param: split: 1 | 2 | 3 | 4
     """
-    name = 'split{}'.format(split)
-    file_path = os.path.join(data_path, name +".txt")
+    name = 'split{}{}'.format(split, '' if mode == 'train' else '_val')
+    file_path = os.path.join(data_path, name + '.txt')
     """
     It's really sad that since the code written in `gen_splits.py` 
     only considered `int` split representations, therefore we need to check many dirty things...
@@ -136,6 +137,7 @@ def dataloader_voc(
         drop_last = True
     )
     return dataloader
+    #end dataloader_voc
 
 
 

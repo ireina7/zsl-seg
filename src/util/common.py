@@ -166,6 +166,10 @@ def show_figure_nonblocking() -> None:
     plt.pause(0.001)
     #end show_figure_nonblocking
 
+def show_figure_blocking() -> None:
+    plt.show()
+    #end show_figure_blocking
+
 
 
 def draw_sample(batch):
@@ -192,7 +196,9 @@ def save_figure(name: str) -> None:
 
 
 def plot(xs: List(int), ys: List(int), style = '') -> None:
-    plt.plot(xs, ys)
+    plt.figure()
+    plt.plot(xs, ys, '.-')
+    plt.grid()
     #end plot
 
 
@@ -245,3 +251,25 @@ class FocalLoss(nn.Module):
         # print(f'p:{p}')
         loss = ((1 - p) ** self.gamma) * logp
         return loss.mean()
+
+
+
+class Mode(object):
+    """
+    Modes of Zero-Shot Segmentation.
+    |seen | unseen | train | val|
+    |higher  <-  bit  ->  lower |
+    """
+    seen   = 0b1000
+    unseen = 0b0100
+    train  = 0b0010
+    val    = 0b0001
+    train_seen        = train | seen          # 1010
+    train_unseen      = train | unseen        # 0110
+    train_seen_unseen = train | seen | unseen # 1011
+    val_seen          = val   | seen          # 1001
+    val_unseen        = val   | unseen        # 0101
+    val_seen_unseen   = val | seen | unseen   # 1101
+
+
+

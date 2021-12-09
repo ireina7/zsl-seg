@@ -119,6 +119,7 @@ def gen_split0(
     ):
     return _gen_split(
         list(map(lambda i: ALL_CLASSES[i], split[0])), 
+        train_or_val = train_or_val,
         file_name = file_name
     )
 
@@ -130,6 +131,7 @@ def gen_split1(
     ):
     return _gen_split(
         list(map(lambda i: ALL_CLASSES[i], split[1])), 
+        train_or_val = train_or_val,
         file_name = file_name
     )
 
@@ -141,6 +143,7 @@ def gen_split2(
     ):
     return _gen_split(
         list(map(lambda i: ALL_CLASSES[i], split[2])), 
+        train_or_val = train_or_val,
         file_name = file_name
     )
 
@@ -152,6 +155,7 @@ def gen_split3(
     ):
     return _gen_split(
         list(map(lambda i: ALL_CLASSES[i], split[3])), 
+        train_or_val = train_or_val,
         file_name = file_name
     )
 
@@ -163,6 +167,7 @@ def gen_split4(
     ):
     return _gen_split(
         list(map(lambda i: ALL_CLASSES[i], split[4])), 
+        train_or_val = train_or_val,
         file_name = file_name
     )
 
@@ -178,9 +183,13 @@ def gen_split(
     file_name = 'split.txt',
     save_or_not = True
     ):
-    assert (i >= 0 and i < 5), "Error while generating splits: invalid split number: {}".format(i)
-    file_name = "split{}.txt".format(i)
+    assert (i >= 0 and i < 5), \
+        "Error while generating splits: invalid split number: {}".format(i)
+    file_name = "split{}{}.txt"\
+        .format(i, '' if train_or_val == 'train' else '_val')
     return _gen_split(
         list(map(lambda i: ALL_CLASSES[i], split[i])), 
-        file_name = file_name
+        train_or_val = train_or_val,
+        file_name = file_name,
     )
+    #end gen_split

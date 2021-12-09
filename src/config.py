@@ -25,6 +25,7 @@ SAVE_NUM_IMAGES = 2
 SAVE_PRED_EVERY = 500
 WEIGHT_DECAY = 0.0005
 LOG_DIR = "./log"
+SHOW_EPOCH = 10
 weak_size = BATCH_SIZE
 weak_proportion = 0.2
 
