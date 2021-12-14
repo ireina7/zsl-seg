@@ -6,6 +6,7 @@ import os
 import sys
 sys.path.append("..")
 from src.config import *
+from src.util import error
 
 def get_embeddings():
     file = ["fasttext.txt", "word2vec.txt", "all.txt"]
@@ -73,14 +74,17 @@ def get_Ws_split(embeddings, split):
     split3 = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10,                     16, 17, 18, 19, 20]
     split4 = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15                    ]
     strong_class = []
-    if split == "1":
+    if split == 1:
         strong_class = [ALL_CLASSES[x] for x in split1]
-    if split == "2":
+    elif split == 2:
         strong_class = [ALL_CLASSES[x] for x in split2]
-    if split == "3":
+    elif split == 3:
         strong_class = [ALL_CLASSES[x] for x in split3]
-    if split == "4":
+    elif split == 4:
         strong_class = [ALL_CLASSES[x] for x in split4]
+    else:
+        error('Split should be a number within [1, 4], but got {}'.format(split))
+    
 
     file = ["all", "fasttext", "word2vec"]
     strong_len = 15

@@ -14,7 +14,8 @@ from torchvision import transforms
 from torch.utils.data import Dataset, DataLoader
 from src.config import path
 from util import log
-
+from util import debug
+from util import Mode
 
 
 '''
@@ -79,16 +80,17 @@ def get_class_names_of_file(
 def _gen_split(
     classes,
     voc_path = path.dataset_voc2012,
-    train_or_val = 'train',
+    mode: Mode = Mode.train_seen,
     file_name = 'split.txt',
     save_or_not = True
     ):
+    # debug(classes, 'classes!')
     xml_dir = path.join(voc_path, 'Annotations')
     jpg_dir = path.join(voc_path, 'JPEGImages')
     seg_dir = path.join(voc_path, 'ImageSets', 'Segmentation')
     ans = {'classes': list(map(lambda cls: ALL_CLASSES.index(cls), classes)), 'files': []}
     lines = []
-    session = 'train.txt' if train_or_val == 'train' else 'val.txt'
+    session = 'train.txt' if mode.has(Mode.train) else 'val.txt'
     with open(path.join(seg_dir, session), "r") as f:
         lines = f.read().splitlines()
         log("Generating splits: total {}".format(len(lines)))
@@ -113,61 +115,61 @@ def _gen_split(
 
 def gen_split0(
     voc_path = path.dataset_voc,
-    train_or_val = 'train',
+    mode: Mode = Mode.train_seen,
     file_name = 'split0.txt',
     save_or_not = True
     ):
     return _gen_split(
         list(map(lambda i: ALL_CLASSES[i], split[0])), 
-        train_or_val = train_or_val,
+        mode = mode,
         file_name = file_name
     )
 
 def gen_split1(
     voc_path = path.dataset_voc,
-    train_or_val = 'train',
+    mode: Mode = Mode.train_seen,
     file_name = 'split1.txt',
     save_or_not = True
     ):
     return _gen_split(
         list(map(lambda i: ALL_CLASSES[i], split[1])), 
-        train_or_val = train_or_val,
+        mode = mode,
         file_name = file_name
     )
 
 def gen_split2(
     voc_path = path.dataset_voc,
-    train_or_val = 'train',
+    mode: Mode = Mode.train_seen,
     file_name = 'split2.txt',
     save_or_not = True
     ):
     return _gen_split(
         list(map(lambda i: ALL_CLASSES[i], split[2])), 
-        train_or_val = train_or_val,
+        mode = mode,
         file_name = file_name
     )
 
 def gen_split3(
     voc_path = path.dataset_voc,
-    train_or_val = 'train',
+    mode: Mode = Mode.train_seen,
     file_name = 'split3.txt',
     save_or_not = True
     ):
     return _gen_split(
         list(map(lambda i: ALL_CLASSES[i], split[3])), 
-        train_or_val = train_or_val,
+        mode = mode,
         file_name = file_name
     )
 
 def gen_split4(
     voc_path = path.dataset_voc,
-    train_or_val = 'train',
+    mode: Mode = Mode.train_seen,
     file_name = 'split4.txt',
     save_or_not = True
     ):
     return _gen_split(
         list(map(lambda i: ALL_CLASSES[i], split[4])), 
-        train_or_val = train_or_val,
+        mode = mode,
         file_name = file_name
     )
 
@@ -179,17 +181,17 @@ The public `gen_split` interface
 def gen_split(
     i: int,
     voc_path = path.dataset_voc,
-    train_or_val = 'train',
+    mode: Mode = Mode.train_seen,
     file_name = 'split.txt',
     save_or_not = True
     ):
     assert (i >= 0 and i < 5), \
         "Error while generating splits: invalid split number: {}".format(i)
     file_name = "split{}{}.txt"\
-        .format(i, '' if train_or_val == 'train' else '_val')
+        .format(i, '' if mode.has(Mode.train) else '_val')
     return _gen_split(
         list(map(lambda i: ALL_CLASSES[i], split[i])), 
-        train_or_val = train_or_val,
+        mode = mode,
         file_name = file_name,
     )
     #end gen_split

@@ -227,6 +227,8 @@ def error(msg: str) -> None:
     prefix = '[error]'
     err_msg = prefixed_with(msg, prefix)
     print(err_msg)
+    raise Exception(msg)
+
 
 def custom_log(prefix: str) -> FunctionType:
     return lambda msg: prefixed_with(msg, prefix)
@@ -254,22 +256,43 @@ class FocalLoss(nn.Module):
 
 
 
+
+class _Mode(object):
+    def __init__(self, mode: int):
+        self.mode = mode
+
+    def has(self, 
+        mode_element#: seen | unseen | train | val
+        ) -> bool:
+        return (mode_element.mode & self.mode) != 0b0000
+    #end class _Mode
+
+
 class Mode(object):
     """
     Modes of Zero-Shot Segmentation.
     |seen | unseen | train | val|
     |higher  <-  bit  ->  lower |
     """
-    seen   = 0b1000
-    unseen = 0b0100
-    train  = 0b0010
-    val    = 0b0001
-    train_seen        = train | seen          # 1010
-    train_unseen      = train | unseen        # 0110
-    train_seen_unseen = train | seen | unseen # 1011
-    val_seen          = val   | seen          # 1001
-    val_unseen        = val   | unseen        # 0101
-    val_seen_unseen   = val | seen | unseen   # 1101
+    seen   = _Mode(0b1000)
+    unseen = _Mode(0b0100)
+    train  = _Mode(0b0010)
+    val    = _Mode(0b0001)
+
+    def of(*modes) -> _Mode:
+        res = 0
+        for mode in modes:
+            res = res | mode.mode
+        return _Mode(res)
+
+    train_seen        = of(train, seen)           # 1010
+    train_unseen      = of(train, unseen)         # 0110
+    train_seen_unseen = of(train, seen, unseen)   # 1011
+    val_seen          = of(val, seen)             # 1001
+    val_unseen        = of(val, unseen)           # 0101
+    val_seen_unseen   = of(val, seen, unseen)     # 1101
+
+    #end class Mode
 
 
 

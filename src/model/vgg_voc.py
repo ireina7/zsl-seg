@@ -5,8 +5,8 @@ from model.util import *
 from util import debug
 from util.typing import torch as th
 
-sys.path.append('../')
 import src.config as config
+
 
 
 class Projection(nn.Module):
@@ -49,9 +49,9 @@ class Projection(nn.Module):
         string = self.which_embedding + "_strong"
         strong = torch.tensor(Ws[string].T, dtype=torch.float).to(config.DEVICE)
         string = self.which_embedding + "_weak"
-        weak = torch.tensor(Ws[string].T, dtype=torch.float).to(config.DEVICE)#.cuda()
+        weak   = torch.tensor(Ws[string].T, dtype=torch.float).to(config.DEVICE)
         string = self.which_embedding + "_all"
-        all = torch.tensor(Ws[string].T, dtype=torch.float).to(config.DEVICE)#.cuda()
+        all    = torch.tensor(Ws[string].T, dtype=torch.float).to(config.DEVICE)
 
         return strong, weak, all
 
@@ -68,7 +68,10 @@ class Projection(nn.Module):
                 yield i
 
     def optim_parameters(self, args):
-        return [{"params": self.get_10x_lr_params(), "lr": 10 * args.learning_rate}]
+        return [{
+            "params": self.get_10x_lr_params(), 
+            "lr": 10 * args.learning_rate
+        }]
 
 
 
@@ -90,6 +93,10 @@ class SemanticNet(nn.Module):
         #end __init__
 
     def forward(self, mask: th.Tensor) -> th.Tensor:
+        feature_map = self.transform_mask(mask, 0)
+        return self.encoder(feature_map)
+
+    def transfrom_mask(self, mask, map) -> th.Tensor:
         pass
 
     def _get_W(self):
@@ -155,6 +162,7 @@ class Our_Model(nn.Module):
 
     def optim_parameters_10x(self, args):
         return [{"params": self.get_10x_lr_params(), "lr": 10 * args.learning_rate}]
+
 
 
 

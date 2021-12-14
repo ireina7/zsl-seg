@@ -2,7 +2,7 @@ import os
 import os.path as ospx
 import torch
 
-split = "1"
+split = 1
 os.environ["CUDA_VISIBLE_DEVICES"] = "7"
 RESTORE_FROM_WHERE = "pretrained"
 EMBEDDING = "all"
@@ -10,7 +10,7 @@ lambdaa = 0.2
 #USE_CPU = True
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-BATCH_SIZE = 9
+BATCH_SIZE = 10
 NUM_WORKERS = 3
 ITER_SIZE = 1
 IGNORE_LABEL = 255 # the background
@@ -26,6 +26,7 @@ SAVE_PRED_EVERY = 500
 WEIGHT_DECAY = 0.0005
 LOG_DIR = "./log"
 SHOW_EPOCH = 10
+DIM_LATENT = 1024
 weak_size = BATCH_SIZE
 weak_proportion = 0.2
 

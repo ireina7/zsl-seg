@@ -1,4 +1,3 @@
-import argparse
 import torch
 import torch.nn as nn
 import numpy as np # type: ignore
@@ -22,7 +21,7 @@ def load_model(args) -> Tuple(Our_Model, int):
     if args.restore_from_where == "pretrained":
         return Our_Model(split), 0
     else:
-        raise Exception('Restore model function has not been supported!')
+        error('Restore model function has not been supported!')
         # restore_from = get_model_path(args.snapshot_dir)
         # model_restore_from = restore_from["model"]
         # i_iter = restore_from["step"]
@@ -31,6 +30,52 @@ def load_model(args) -> Tuple(Our_Model, int):
         # saved_state_dict = torch.load(model_restore_from)
         # model.load_state_dict(saved_state_dict)
     #end load_model
+
+def eval_model(args, model, mode: Mode) -> float:
+    device = args.device
+    w, h = args.input_size.split(",")
+    input_size = (int(w), int(h))
+    interp = nn.Upsample(size=(input_size[1], input_size[0]), mode="bilinear", align_corners=True)
+    eval_loader = dataloader_voc(split = split, mode = mode)
+    data_len = len(eval_loader)
+
+    iter = enumerate(eval_loader)
+    model.eval()
+    hist = np.zeros((15, 15))
+    average_mIoUs_per_epoch = 0
+    debug(data_len, 'eval data length')
+    for i in range(data_len):
+        blank_line()
+        log('> Evaluation step {}'.format(i))
+        _, batch = iter.__next__()
+        images, masks = batch["image"], batch["label"]
+        images = images.to(device)
+        masks = masks.long().to(device)
+        pred = model(images, "all")
+        pred = interp(pred)
+
+        max_ = torch.argmax(pred, 1)
+        pred_IoU = max_[0].clone().detach().cpu().numpy()
+
+        #print(pred_IoU.shape)
+        #pred_cpu = pred_IoU.data.cpu().numpy()
+        pred_cpu = pred_IoU
+        mask_cpu = masks[0].cpu().numpy()
+
+        pred_cpu[mask_cpu == 255] = 255
+        m = confusion_matrix(mask_cpu.flatten(), pred_cpu.flatten(), 15)
+        #hist += m
+        hist += m
+        mIoUs = per_class_iu(hist)
+        average_mIoUs = sum(mIoUs) / len(mIoUs)
+        average_mIoUs_per_epoch = average_mIoUs
+        
+        log("> mIoU: \n{}".format(per_class_iu(m)))
+        log("> mIoUs: \n{}".format(mIoUs))
+        log("> Average mIoUs: \n{}".format(average_mIoUs))
+        #end for
+    #end eval_model
+
 
 
 
@@ -59,7 +104,7 @@ def main() -> None:
     data_len = len(train_loader)
     num_steps = data_len * args.num_epochs
 
-    '''
+    
     optimizer = optim.SGD(
         model.optim_parameters_1x(args),
         lr=args.learning_rate, momentum=args.momentum, weight_decay=args.weight_decay)
@@ -67,15 +112,15 @@ def main() -> None:
     optimizer_10x = optim.SGD(
         model.optim_parameters_10x(args),
         lr=10 * args.learning_rate, momentum=args.momentum, weight_decay=args.weight_decay)
-    '''
-    optimizer = optim.Adam(
-        model.optim_parameters_1x(args),
-        lr=args.learning_rate, weight_decay=args.weight_decay)
+    
+    # optimizer = optim.Adam(
+    #     model.optim_parameters_1x(args),
+    #     lr=args.learning_rate, weight_decay=args.weight_decay)
     optimizer.zero_grad()
 
-    optimizer_10x = optim.Adam(
-        model.optim_parameters_10x(args),
-        lr=10 * args.learning_rate, weight_decay=args.weight_decay)
+    # optimizer_10x = optim.Adam(
+    #     model.optim_parameters_10x(args),
+    #     lr=10 * args.learning_rate, weight_decay=args.weight_decay)
     optimizer_10x.zero_grad()
 
     seg_loss = nn.CrossEntropyLoss(ignore_index=255)
@@ -188,11 +233,25 @@ def main() -> None:
             optimizer_10x.step()
 
         average_mIoUs_history.append(average_mIoUs_per_epoch)
+        '''
+        Save mIoU history
+        '''
         if epoch > 0 and epoch % SHOW_EPOCH == 0:
             plot(range(0, len(average_mIoUs_history)), average_mIoUs_history)
             # show_figure_nonblocking()
             if epoch >= SHOW_EPOCH:
                 save_figure('output/mIoUs of Epoches {}-{}.pdf'.format(0, epoch))
+                #end if
+            #end if
+
+        '''
+        Evaluate model performance on val dataset
+        '''
+        if epoch > 0 and epoch % 10 == 0:
+            blank_line(2)
+            log('>> Evaluation stage starting ...')
+            eval_model(args, model, Mode.val_seen)
+            #end if
 
     #end main
 

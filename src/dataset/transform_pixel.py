@@ -7,6 +7,7 @@ import random
 import numpy as np
 
 from PIL import Image, ImageOps
+from src.util import error
 
 
 # transform for image and mask
@@ -127,22 +128,24 @@ class ToTensor(object):
         self.ignore = [x for x in all if x not in classes]
         self.classes = classes
         self.split = split
-        if split == "1":
+        if split == 1:
             self.RELABELED_CLASSES_DIC = {
                 1: 15, 2: 16, 3: 17, 4: 18, 5: 19, 6: 0, 7: 1, 8: 2, 9: 3, 10: 4, 11: 5,
                 12: 6, 13: 7, 14: 8, 15: 9, 16: 10, 17: 11, 18: 12, 19: 13, 20: 14}
-        elif split == "2":
+        elif split == 2:
             self.RELABELED_CLASSES_DIC = {
                 1: 0, 2: 1, 3: 2, 4: 3, 5: 4, 6: 15, 7: 16, 8: 17, 9: 18, 10: 19, 11: 5,
                 12: 6, 13: 7, 14: 8, 15: 9, 16: 10, 17: 11, 18: 12, 19: 13, 20: 14}
-        elif split == "3":
+        elif split == 3:
             self.RELABELED_CLASSES_DIC = {
                 1: 0, 2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 7: 6, 8: 7, 9: 8, 10: 9, 11: 15, 12: 16,
                 13: 17, 14: 18, 15: 19, 16: 10, 17: 11, 18: 12, 19: 13, 20: 14}
-        else:#if split == "4":
+        elif split == 4:
             self.RELABELED_CLASSES_DIC = {
                 1: 0, 2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 7: 6, 8: 7, 9: 8, 10: 9, 11: 10, 12: 11,
                 13: 12, 14: 13, 15: 14, 16: 15, 17: 16, 18: 17, 19: 18, 20: 19}
+        else:
+            error('Transforming `ToTensor`: split must within [0, 4], but got {}'.format(split))
         #print(">> ", self.classes)
 
     def __call__(self, sample):

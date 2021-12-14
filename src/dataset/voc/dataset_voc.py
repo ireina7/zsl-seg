@@ -15,7 +15,7 @@ from dataset.voc.gen_splits import gen_split
 from dataset.voc.gen_splits import ALL_CLASSES
 #from dataset.util import *
 from torchvision import transforms
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, dataloader
 from torch.utils.data import DataLoader
 from util import *
 # from util.typing import *
@@ -43,6 +43,14 @@ def transform_for_train(fixed_scale = 512, rotate_prob = 15, classes = None, spl
     transform_list.append(ToTensor(classes = classes, split = split))
 
     return transforms.Compose(transform_list)
+
+def transform_for_test(fixed_scale = 512, rotate_prob = 15, classes = None, split = None):
+    transform_list = [
+        RandomSized(fixed_scale),
+        ToTensor(classes = classes, split = split),
+    ]
+    return transforms.Compose(transform_list)
+
 
 
 
@@ -78,37 +86,31 @@ def dataloader_test(data_path = config.path.dataset_voc, split = "1"):
     print(classes)
 
 
-def dataloader_voc(
+def load_voc(
     data_path = config.path.dataset_voc,
     batch_size = 4,
     input_size = (512, 512),
     shuffle = True,
     num_workers = 2,
     split = None,
-    mode = 'train',
+    mode: Mode = Mode.train_seen,
+    transforming: bool = False
     ):
     """
     The main dataloader
     @param: split: 1 | 2 | 3 | 4
     """
-    name = 'split{}{}'.format(split, '' if mode == 'train' else '_val')
+    name = 'split{}{}'.format(split, '' if mode.has(Mode.train) else '_val')
     file_path = os.path.join(data_path, name + '.txt')
     """
     It's really sad that since the code written in `gen_splits.py` 
     only considered `int` split representations, therefore we need to check many dirty things...
     """
-    if isinstance(split, str) and split.isdigit():
-        i = int(split)
-        if i >= 0 and i <= 4:
-            gen_split(i)
-        else:
-            raise ValueError('split range should within [0, 4].')
+    if split >= 0 and split <= 4:
+        gen_split(split)
     else:
-        """
-        If is not a str which represent split as an integer number,
-        Raise an error since I currently don't want to support complex splits.
-        """
-        raise ValueError('Wrong format of split representation!')
+        error('split range should within [0, 4], but got {}'.format(split))
+    
     with open(file_path, "r") as f:
         lines = f.read().splitlines()
         classes = lines[0]
@@ -121,23 +123,52 @@ def dataloader_voc(
         rotate_prob = 15,
         classes = classes,
         split = split
-    )
+    ) if transforming else \
+        transform_for_test(classes = classes, split = split)
 
-    voc_train: th.DataSet = VOC2012Segmentation(
+    voc_dataset: th.DataSet = VOC2012Segmentation(
         base_dir = config.path.dataset_voc,
         split = name,
         transform = transform
     )
-
     dataloader: th.DataLoader = DataLoader(
-        voc_train,
+        voc_dataset,
         batch_size = batch_size,
         shuffle = shuffle,
         num_workers = num_workers,
         drop_last = True
     )
     return dataloader
+    #end load_voc
+
+
+
+def dataloader_voc(
+    data_path = config.path.dataset_voc,
+    batch_size = 4,
+    input_size = (512, 512),
+    shuffle = True,
+    num_workers = 2,
+    split = None,
+    mode: Mode = Mode.train_seen,
+    ):
+    
+    dataloader = load_voc(
+        data_path = data_path,
+        batch_size = batch_size,
+        input_size = input_size,
+        shuffle = shuffle,
+        num_workers = num_workers,
+        split = split,
+        mode = mode,
+        transforming = mode.has(Mode.train)
+    )
+    return dataloader
     #end dataloader_voc
+
+
+def dataset_voc_statistics(split_path: str) -> None:
+    pass
 
 
 
@@ -170,6 +201,7 @@ class VOC2012Segmentation(Dataset):
             split.sort()
             self.split = split
 
+        debug(self.split, 'self.split')
         self.transform = transform
 
         _splits_dir = self._base_dir
@@ -187,7 +219,7 @@ class VOC2012Segmentation(Dataset):
                 # self.classes = list(map(lambda i: ALL_CLASSES[i], self.classes))
 
             for ii, line in enumerate(lines):
-                #print(line)
+                # print(line)
                 _image_name = line + '.jpg'
                 _cat_name = line + '.png'
                 #_image_name = _image_name[1:]
